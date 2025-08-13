@@ -42,14 +42,57 @@
           <i class="fas fa-clock mr-2"></i>
           Scraped {{ post.scraped_at | datetime }}
         </span>
+        {% if post.full_content %}
+        <span class="flex items-center">
+          <i class="fas fa-file-text mr-2"></i>
+          {{ post.full_content|length }} characters
+        </span>
+        {% endif %}
       </div>
 
-      <!-- Post Description -->
-      <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8">
-        {{ post.description }}
+      <!-- Content Display Options -->
+      <div class="mb-6 flex justify-center">
+        <div class="bg-gray-100 rounded-lg p-1 inline-flex">
+          <button
+            id="summaryBtn"
+            onclick="showSummary()"
+            class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-gray-900 shadow-sm"
+          >
+            Summary
+          </button>
+          <button
+            id="fullContentBtn"
+            onclick="showFullContent()"
+            class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900"
+          >
+            Full Article
+          </button>
+        </div>
       </div>
 
-      <!-- Read More Button -->
+      <!-- Summary Content -->
+      <div
+        id="summaryContent"
+        class="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8"
+      >
+        <div class="text-gray-600 mb-4">{{ post.description }}</div>
+      </div>
+
+      <!-- Full Article Content -->
+      <div
+        id="fullContent"
+        class="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8 hidden"
+      >
+        {% if post.full_content %}
+        <div class="whitespace-pre-line">{{ post.full_content }}</div>
+        {% else %}
+        <div class="text-gray-600 italic mb-4">
+          Full content not available. Showing description:
+        </div>
+        {{ post.description }} {% endif %}
+      </div>
+
+      <!-- Read Original Button -->
       <div class="flex justify-center">
         <a
           href="{{ post.url }}"
@@ -57,8 +100,8 @@
           rel="noopener noreferrer"
           class="inline-flex items-center bg-primary text-white px-6 py-3 rounded-md hover:bg-secondary transition-colors font-medium"
         >
-          <i class="fas fa-book-open mr-2"></i>
-          Read Full Article
+          <i class="fas fa-external-link-alt mr-2"></i>
+          View Original Article
           <i class="fas fa-external-link-alt ml-2 text-sm"></i>
         </a>
       </div>
@@ -221,6 +264,23 @@
 
           localStorage.setItem('keyboardHintShown', 'true');
       }, 2000);
+  }
+
+  // Content toggle functions
+  function showSummary() {
+    document.getElementById('summaryContent').classList.remove('hidden');
+    document.getElementById('fullContent').classList.add('hidden');
+
+    document.getElementById('summaryBtn').className = 'px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-gray-900 shadow-sm';
+    document.getElementById('fullContentBtn').className = 'px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900';
+  }
+
+  function showFullContent() {
+    document.getElementById('summaryContent').classList.add('hidden');
+    document.getElementById('fullContent').classList.remove('hidden');
+
+    document.getElementById('summaryBtn').className = 'px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900';
+    document.getElementById('fullContentBtn').className = 'px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-gray-900 shadow-sm';
   }
 </script>
 {% endblock %}
