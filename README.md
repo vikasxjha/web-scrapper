@@ -5,17 +5,16 @@ A modern Python web application that scrapes blog posts from TestGuild and displ
 ## Features
 
 - **Web Scraping**: Extracts blog posts from https://testguild.com/blog/ using BeautifulSoup
+- **Full Content Extraction**: Fetches complete article content from individual pages
 - **Data Storage**: Stores posts in SQLite database with duplicate prevention
 - **Modern UI**: Clean, responsive design using TailwindCSS
-- **Multiple Views**:
-  - Single post view with Previous/Next navigation
-  - All posts list view with pagination
-  - Search functionality
+- **Multiple Views**: 
+  - Single post view with Previous/Next navigation and Summary/Full Content toggle
+  - All posts list view with pagination and content toggles
+  - Search functionality (searches titles, descriptions, and full content)
 - **Caching**: 30-minute cache to reduce server load
 - **Error Handling**: Graceful error handling with user-friendly messages
-- **Keyboard Navigation**: Use arrow keys to navigate between posts
-
-## Project Structure
+- **Keyboard Navigation**: Use arrow keys to navigate between posts## Project Structure
 
 ```
 ├── app/
@@ -137,6 +136,7 @@ The SQLite database is stored in `data/blog_posts.db` by default. You can modify
 ### Web Scraping
 
 - **Smart Extraction**: Uses CSS selectors and fallback patterns to extract post data
+- **Full Content Fetching**: Visits individual article pages to extract complete content
 - **Caching**: 30-minute TTL cache to avoid excessive requests
 - **Error Handling**: Graceful handling of network errors and parsing issues
 - **Rate Limiting**: Respectful scraping with proper delays
@@ -152,6 +152,7 @@ The SQLite database is stored in `data/blog_posts.db` by default. You can modify
 
 - **Responsive Design**: Works on desktop, tablet, and mobile
 - **Modern Styling**: Clean interface using TailwindCSS
+- **Content Toggle**: Switch between summary and full article content
 - **Interactive Elements**: Hover effects, transitions, and animations
 - **Accessibility**: Semantic HTML and keyboard navigation
 

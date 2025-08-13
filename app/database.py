@@ -38,6 +38,7 @@ class BlogDatabase:
                     title TEXT NOT NULL,
                     url TEXT UNIQUE NOT NULL,
                     description TEXT,
+                    full_content TEXT,
                     published_date TEXT,
                     thumbnail TEXT,
                     scraped_at TEXT NOT NULL,
@@ -60,12 +61,13 @@ class BlogDatabase:
             with self.get_connection() as conn:
                 conn.execute('''
                     INSERT OR REPLACE INTO blog_posts 
-                    (title, url, description, published_date, thumbnail, scraped_at)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    (title, url, description, full_content, published_date, thumbnail, scraped_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     post['title'],
                     post['url'],
                     post['description'],
+                    post.get('full_content'),
                     post.get('published_date'),
                     post.get('thumbnail'),
                     post['scraped_at']
@@ -127,9 +129,9 @@ class BlogDatabase:
             with self.get_connection() as conn:
                 cursor = conn.execute('''
                     SELECT * FROM blog_posts 
-                    WHERE title LIKE ? OR description LIKE ?
+                    WHERE title LIKE ? OR description LIKE ? OR full_content LIKE ?
                     ORDER BY created_at DESC
-                ''', (f'%{keyword}%', f'%{keyword}%'))
+                ''', (f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'))
                 
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]

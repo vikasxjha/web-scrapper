@@ -95,6 +95,9 @@ class BlogScraper:
             # Extract description
             description = self.extract_description(container)
             
+            # Extract full content
+            full_content = self.extract_full_content(url)
+            
             # Extract date
             pub_date = self.extract_date(container)
             
@@ -105,6 +108,7 @@ class BlogScraper:
                 'title': title,
                 'url': url,
                 'description': description,
+                'full_content': full_content,
                 'published_date': pub_date,
                 'thumbnail': thumbnail,
                 'scraped_at': datetime.now().isoformat()
@@ -135,6 +139,85 @@ class BlogScraper:
             return text[:300] + '...' if len(text) > 300 else text
         
         return "No description available"
+    
+    def extract_full_content(self, article_url: str) -> str:
+        """Extract full article content from the article page"""
+        try:
+            # Check cache first
+            cache_key = f"content_{article_url}"
+            if cache_key in cache:
+                return cache[cache_key]
+            
+            logger.info(f"Fetching full content from {article_url}")
+            
+            # Fetch the individual article page
+            soup = self.fetch_page(article_url)
+            if not soup:
+                return "Could not fetch article content."
+            
+            # Look for main content containers
+            content_selectors = [
+                'article .entry-content',
+                'article .post-content', 
+                'article .content',
+                '.entry-content',
+                '.post-content',
+                '.article-content',
+                '.content-area',
+                'main article',
+                '[class*="content"]',
+                '.single-post .content'
+            ]
+            
+            content_text = ""
+            
+            for selector in content_selectors:
+                content_elem = soup.select_one(selector)
+                if content_elem:
+                    # Remove unwanted elements
+                    for unwanted in content_elem.find_all(['script', 'style', 'nav', 'aside', '.social-share', '.related-posts']):
+                        unwanted.decompose()
+                    
+                    # Extract text content
+                    paragraphs = content_elem.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'])
+                    content_parts = []
+                    
+                    for elem in paragraphs:
+                        text = elem.get_text(strip=True)
+                        if text and len(text) > 20:  # Filter out very short text
+                            content_parts.append(text)
+                    
+                    if content_parts:
+                        content_text = '\n\n'.join(content_parts)
+                        break
+            
+            # Fallback: get all paragraphs from the page
+            if not content_text:
+                paragraphs = soup.find_all('p')
+                content_parts = []
+                for p in paragraphs:
+                    text = p.get_text(strip=True)
+                    if text and len(text) > 50:
+                        content_parts.append(text)
+                
+                content_text = '\n\n'.join(content_parts[:10])  # Limit to first 10 paragraphs
+            
+            # Clean up the content
+            if content_text:
+                # Remove excessive whitespace
+                content_text = re.sub(r'\n\s*\n\s*\n', '\n\n', content_text)
+                content_text = content_text.strip()
+                
+                # Cache the result
+                cache[cache_key] = content_text
+                
+                return content_text
+            else:
+                return "Article content could not be extracted."
+                
+        except Exception as e:
+            logger.error(f"Error extracting full content from {article_url}: {e}")
+            return "Error occurred while fetching article content."
     
     def extract_date(self, container) -> Optional[str]:
         """Extract publication date"""
