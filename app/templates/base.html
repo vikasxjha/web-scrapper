@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}TestGuild Blog Viewer{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#3B82F6",
+              secondary: "#1E40AF",
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- Navigation Header -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center">
+            <a
+              href="{{ url_for('index') }}"
+              class="text-2xl font-bold text-primary"
+            >
+              <i class="fas fa-blog mr-2"></i>TestGuild Blog
+            </a>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a
+              href="{{ url_for('index') }}"
+              class="text-gray-600 hover:text-primary transition-colors"
+            >
+              <i class="fas fa-home mr-1"></i>Home
+            </a>
+            <a
+              href="{{ url_for('view_all') }}"
+              class="text-gray-600 hover:text-primary transition-colors"
+            >
+              <i class="fas fa-list mr-1"></i>All Posts
+            </a>
+            <a
+              href="{{ url_for('stats') }}"
+              class="text-gray-600 hover:text-primary transition-colors"
+            >
+              <i class="fas fa-chart-bar mr-1"></i>Stats
+            </a>
+            <form method="GET" action="{{ url_for('search') }}" class="flex">
+              <input
+                type="text"
+                name="q"
+                placeholder="Search posts..."
+                class="px-3 py-1 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+              />
+              <button
+                type="submit"
+                class="bg-primary text-white px-3 py-1 rounded-r-md hover:bg-secondary transition-colors"
+              >
+                <i class="fas fa-search"></i>
+              </button>
+            </form>
+            <a
+              href="{{ url_for('refresh_data') }}"
+              class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
+            >
+              <i class="fas fa-refresh mr-1"></i>Refresh
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+      {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category }} mb-4 p-4 rounded-md border-l-4 
+                        {% if category == 'success' %}bg-green-50 border-green-500 text-green-700
+                        {% elif category == 'error' %}bg-red-50 border-red-500 text-red-700
+                        {% elif category == 'warning' %}bg-yellow-50 border-yellow-500 text-yellow-700
+                        {% else %}bg-blue-50 border-blue-500 text-blue-700{% endif %}"
+      >
+        <div class="flex">
+          <div class="flex-shrink-0">
+            {% if category == 'success' %}<i class="fas fa-check-circle"></i> {%
+            elif category == 'error' %}<i class="fas fa-exclamation-circle"></i>
+            {% elif category == 'warning' %}<i
+              class="fas fa-exclamation-triangle"
+            ></i>
+            {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+          </div>
+          <div class="ml-3">{{ message }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center text-gray-500">
+          <p>
+            &copy; 2024 TestGuild Blog Viewer. Built with Flask and TailwindCSS.
+          </p>
+          <p class="mt-2 text-sm">
+            <i class="fas fa-code mr-1"></i>
+            A modern web scraper for TestGuild blog posts
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- JavaScript for enhanced interactions -->
+    <script>
+      // Auto-hide flash messages after 5 seconds
+      document.addEventListener("DOMContentLoaded", function () {
+        const alerts = document.querySelectorAll(".alert");
+        alerts.forEach(function (alert) {
+          setTimeout(function () {
+            alert.style.transition = "opacity 0.5s";
+            alert.style.opacity = "0";
+            setTimeout(function () {
+              alert.remove();
+            }, 500);
+          }, 5000);
+        });
+      });
+
+      // Add loading state for refresh button
+      function addLoadingState() {
+        const refreshBtn = document.querySelector('a[href*="refresh"]');
+        if (refreshBtn) {
+          refreshBtn.onclick = function () {
+            refreshBtn.innerHTML =
+              '<i class="fas fa-spinner fa-spin mr-1"></i>Refreshing...';
+            refreshBtn.classList.add("opacity-75", "cursor-not-allowed");
+          };
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", addLoadingState);
+    </script>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

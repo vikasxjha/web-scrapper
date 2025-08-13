@@ -1,0 +1,191 @@
+{% extends "base.html" %} {% block title %}Statistics{% endblock %} {% block
+content %}
+<div class="max-w-4xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+      <i class="fas fa-chart-bar mr-3 text-primary"></i>
+      Statistics
+    </h1>
+    <p class="text-gray-600">
+      Overview of scraped blog posts and scraping activity
+    </p>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="grid gap-6 md:grid-cols-2 mb-8">
+    <!-- Total Posts -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div
+            class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center"
+          >
+            <i class="fas fa-file-alt text-blue-600"></i>
+          </div>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-lg font-semibold text-gray-900">Total Posts</h3>
+          <p class="text-3xl font-bold text-blue-600">{{ total_posts }}</p>
+          <p class="text-sm text-gray-500">Blog posts in database</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last Scrape Time -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div
+            class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center"
+          >
+            <i class="fas fa-clock text-green-600"></i>
+          </div>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-lg font-semibold text-gray-900">Last Scrape</h3>
+          {% if latest_scrape %}
+          <p class="text-lg font-semibold text-green-600">
+            {{ latest_scrape | datetime }}
+          </p>
+          <p class="text-sm text-gray-500">Most recent data update</p>
+          {% else %}
+          <p class="text-lg font-semibold text-gray-400">Never</p>
+          <p class="text-sm text-gray-500">No data scraped yet</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+      <i class="fas fa-tools mr-2 text-primary"></i>
+      Quick Actions
+    </h3>
+    <div class="grid gap-4 md:grid-cols-3">
+      <a
+        href="{{ url_for('refresh_data') }}"
+        class="flex items-center justify-center bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-4 transition-colors group"
+      >
+        <div class="text-center">
+          <i
+            class="fas fa-refresh text-2xl text-green-600 mb-2 group-hover:rotate-180 transition-transform duration-500"
+          ></i>
+          <p class="font-medium text-green-700">Refresh Data</p>
+          <p class="text-sm text-green-600">Scrape latest posts</p>
+        </div>
+      </a>
+
+      <a
+        href="{{ url_for('view_all') }}"
+        class="flex items-center justify-center bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 transition-colors group"
+      >
+        <div class="text-center">
+          <i class="fas fa-list text-2xl text-blue-600 mb-2"></i>
+          <p class="font-medium text-blue-700">View All Posts</p>
+          <p class="text-sm text-blue-600">Browse complete list</p>
+        </div>
+      </a>
+
+      <a
+        href="{{ url_for('index') }}"
+        class="flex items-center justify-center bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg p-4 transition-colors group"
+      >
+        <div class="text-center">
+          <i class="fas fa-home text-2xl text-purple-600 mb-2"></i>
+          <p class="font-medium text-purple-700">Single View</p>
+          <p class="text-sm text-purple-600">One post at a time</p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Data Information -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+      <i class="fas fa-info-circle mr-2 text-primary"></i>
+      Data Information
+    </h3>
+
+    <div class="space-y-4">
+      <div
+        class="flex justify-between items-center py-2 border-b border-gray-100"
+      >
+        <span class="text-gray-600">Source Website:</span>
+        <a
+          href="https://testguild.com/blog/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary hover:text-secondary transition-colors"
+        >
+          testguild.com/blog
+          <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+        </a>
+      </div>
+
+      <div
+        class="flex justify-between items-center py-2 border-b border-gray-100"
+      >
+        <span class="text-gray-600">Database Location:</span>
+        <span class="text-gray-800 font-mono text-sm">data/blog_posts.db</span>
+      </div>
+
+      <div
+        class="flex justify-between items-center py-2 border-b border-gray-100"
+      >
+        <span class="text-gray-600">Cache Duration:</span>
+        <span class="text-gray-800">30 minutes</span>
+      </div>
+
+      <div class="flex justify-between items-center py-2">
+        <span class="text-gray-600">Scraping Method:</span>
+        <span class="text-gray-800">BeautifulSoup + Requests</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Section -->
+  <div class="mt-8 bg-gray-50 rounded-lg p-6">
+    <h4 class="text-md font-semibold text-gray-800 mb-3">
+      <i class="fas fa-question-circle mr-2 text-gray-600"></i>
+      How It Works
+    </h4>
+    <div class="text-sm text-gray-600 space-y-2">
+      <p>
+        • The scraper visits TestGuild's blog page and extracts post information
+      </p>
+      <p>• Data is cached for 30 minutes to avoid excessive requests</p>
+      <p>• Posts are stored in a local SQLite database to avoid duplicates</p>
+      <p>• You can search, browse, or view posts one at a time</p>
+      <p>
+        • Use keyboard arrows (← →) to navigate between posts in single view
+      </p>
+    </div>
+  </div>
+
+  {% if total_posts == 0 %}
+  <!-- Empty State Call to Action -->
+  <div class="mt-8 text-center">
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+      <i class="fas fa-exclamation-triangle text-3xl text-yellow-600 mb-4"></i>
+      <h4 class="text-lg font-semibold text-yellow-800 mb-2">
+        No Data Available
+      </h4>
+      <p class="text-yellow-700 mb-4">
+        The database is empty. Click the button below to scrape blog posts from
+        TestGuild.
+      </p>
+      <a
+        href="{{ url_for('refresh_data') }}"
+        class="inline-flex items-center bg-yellow-600 text-white px-6 py-3 rounded-md hover:bg-yellow-700 transition-colors font-medium"
+      >
+        <i class="fas fa-download mr-2"></i>
+        Scrape Blog Posts Now
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

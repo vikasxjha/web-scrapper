@@ -1,0 +1,226 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-4xl mx-auto">
+  {% if post %}
+  <!-- Blog Post Display -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <!-- Post Image -->
+    {% if post.thumbnail %}
+    <div class="h-64 bg-gray-200 overflow-hidden">
+      <img
+        src="{{ post.thumbnail }}"
+        alt="{{ post.title }}"
+        class="w-full h-full object-cover"
+        onerror="this.parentElement.style.display='none'"
+      />
+    </div>
+    {% endif %}
+
+    <!-- Post Content -->
+    <div class="p-8">
+      <!-- Post Title -->
+      <h1 class="text-3xl font-bold text-gray-900 mb-4 leading-tight">
+        <a
+          href="{{ post.url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-primary transition-colors"
+        >
+          {{ post.title }}
+          <i class="fas fa-external-link-alt text-sm ml-2 text-gray-400"></i>
+        </a>
+      </h1>
+
+      <!-- Post Meta -->
+      <div class="flex items-center text-gray-500 text-sm mb-6 space-x-4">
+        {% if post.published_date %}
+        <span class="flex items-center">
+          <i class="fas fa-calendar mr-2"></i>
+          {{ post.published_date }}
+        </span>
+        {% endif %}
+        <span class="flex items-center">
+          <i class="fas fa-clock mr-2"></i>
+          Scraped {{ post.scraped_at | datetime }}
+        </span>
+      </div>
+
+      <!-- Post Description -->
+      <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8">
+        {{ post.description }}
+      </div>
+
+      <!-- Read More Button -->
+      <div class="flex justify-center">
+        <a
+          href="{{ post.url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center bg-primary text-white px-6 py-3 rounded-md hover:bg-secondary transition-colors font-medium"
+        >
+          <i class="fas fa-book-open mr-2"></i>
+          Read Full Article
+          <i class="fas fa-external-link-alt ml-2 text-sm"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Controls -->
+  <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center">
+      <!-- Previous Button -->
+      <div>
+        {% if has_previous %}
+        <a
+          href="{{ url_for('index', index=current_index-1) }}"
+          class="inline-flex items-center bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          <i class="fas fa-chevron-left mr-2"></i>
+          Previous Post
+        </a>
+        {% else %}
+        <span
+          class="inline-flex items-center bg-gray-50 text-gray-400 px-4 py-2 rounded-md cursor-not-allowed"
+        >
+          <i class="fas fa-chevron-left mr-2"></i>
+          Previous Post
+        </span>
+        {% endif %}
+      </div>
+
+      <!-- Post Counter -->
+      <div class="text-center">
+        <span class="text-gray-600 font-medium">
+          Post {{ current_index + 1 }} of {{ total_posts }}
+        </span>
+        <div class="mt-2">
+          <div class="bg-gray-200 rounded-full h-2 w-48 mx-auto">
+            <div
+              class="bg-primary h-2 rounded-full transition-all duration-300"
+              style="width: {{ ((current_index + 1) / total_posts * 100) if total_posts > 0 else 0 }}%"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next Button -->
+      <div>
+        {% if has_next %}
+        <a
+          href="{{ url_for('index', index=current_index+1) }}"
+          class="inline-flex items-center bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          Next Post
+          <i class="fas fa-chevron-right ml-2"></i>
+        </a>
+        {% else %}
+        <span
+          class="inline-flex items-center bg-gray-50 text-gray-400 px-4 py-2 rounded-md cursor-not-allowed"
+        >
+          Next Post
+          <i class="fas fa-chevron-right ml-2"></i>
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="mt-6 flex justify-center space-x-2">
+      <a
+        href="{{ url_for('index', index=0) }}"
+        class="text-primary hover:text-secondary transition-colors text-sm"
+      >
+        <i class="fas fa-step-backward mr-1"></i>First
+      </a>
+      <span class="text-gray-300">|</span>
+      <a
+        href="{{ url_for('index', index=total_posts-1) }}"
+        class="text-primary hover:text-secondary transition-colors text-sm"
+      >
+        Last<i class="fas fa-step-forward ml-1"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Additional Actions -->
+  <div class="mt-6 text-center">
+    <a
+      href="{{ url_for('view_all') }}"
+      class="inline-flex items-center text-primary hover:text-secondary transition-colors"
+    >
+      <i class="fas fa-th-list mr-2"></i>
+      View All Posts
+    </a>
+  </div>
+
+  {% else %}
+  <!-- No Posts Available -->
+  <div class="text-center py-16">
+    <div class="bg-white rounded-lg shadow-md p-12">
+      <i class="fas fa-file-alt text-6xl text-gray-300 mb-6"></i>
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">No Blog Posts Found</h2>
+      <p class="text-gray-600 mb-8 max-w-md mx-auto">
+        {{ message or "It looks like there are no blog posts in the database
+        yet. Try refreshing the data to scrape posts from TestGuild." }}
+      </p>
+      <div class="space-y-4">
+        <a
+          href="{{ url_for('refresh_data') }}"
+          class="inline-flex items-center bg-primary text-white px-6 py-3 rounded-md hover:bg-secondary transition-colors font-medium"
+        >
+          <i class="fas fa-refresh mr-2"></i>
+          Refresh Data
+        </a>
+        <div>
+          <a
+            href="{{ url_for('stats') }}"
+            class="text-primary hover:text-secondary transition-colors"
+          >
+            <i class="fas fa-chart-bar mr-1"></i>
+            View Statistics
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+      if (e.target.tagName.toLowerCase() === 'input') return; // Ignore if typing in search
+
+      {% if has_previous %}
+          if (e.key === 'ArrowLeft') {
+              window.location.href = "{{ url_for('index', index=current_index-1) }}";
+          }
+      {% endif %}
+
+      {% if has_next %}
+          if (e.key === 'ArrowRight') {
+              window.location.href = "{{ url_for('index', index=current_index+1) }}";
+          }
+      {% endif %}
+  });
+
+  // Show keyboard shortcuts hint
+  let hintShown = localStorage.getItem('keyboardHintShown');
+  if (!hintShown && {{ total_posts }} > 1) {
+      setTimeout(function() {
+          const hint = document.createElement('div');
+          hint.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-md text-sm shadow-lg z-50';
+          hint.innerHTML = '<i class="fas fa-keyboard mr-2"></i>Use ← → arrow keys to navigate';
+          document.body.appendChild(hint);
+
+          setTimeout(function() {
+              hint.style.transition = 'opacity 0.5s';
+              hint.style.opacity = '0';
+              setTimeout(() => hint.remove(), 500);
+          }, 3000);
+
+          localStorage.setItem('keyboardHintShown', 'true');
+      }, 2000);
+  }
+</script>
+{% endblock %}
