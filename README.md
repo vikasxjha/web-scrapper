@@ -8,7 +8,7 @@ A modern Python web application that scrapes blog posts from TestGuild and displ
 - **Full Content Extraction**: Fetches complete article content from individual pages
 - **Data Storage**: Stores posts in SQLite database with duplicate prevention
 - **Modern UI**: Clean, responsive design using TailwindCSS
-- **Multiple Views**: 
+- **Multiple Views**:
   - Single post view with Previous/Next navigation and Summary/Full Content toggle
   - All posts list view with pagination and content toggles
   - Search functionality (searches titles, descriptions, and full content)

@@ -41,6 +41,7 @@ class BlogDatabase:
                     full_content TEXT,
                     published_date TEXT,
                     thumbnail TEXT,
+                    generated_image TEXT,
                     scraped_at TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -61,8 +62,8 @@ class BlogDatabase:
             with self.get_connection() as conn:
                 conn.execute('''
                     INSERT OR REPLACE INTO blog_posts 
-                    (title, url, description, full_content, published_date, thumbnail, scraped_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (title, url, description, full_content, published_date, thumbnail, generated_image, scraped_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     post['title'],
                     post['url'],
@@ -70,6 +71,7 @@ class BlogDatabase:
                     post.get('full_content'),
                     post.get('published_date'),
                     post.get('thumbnail'),
+                    post.get('generated_image'),
                     post['scraped_at']
                 ))
                 conn.commit()
@@ -87,6 +89,21 @@ class BlogDatabase:
         
         logger.info(f"Inserted {inserted_count} out of {len(posts)} posts")
         return inserted_count
+    
+    def update_post_image(self, post_id: int, image_path: str) -> bool:
+        """Update the generated image path for a specific post"""
+        try:
+            with self.get_connection() as conn:
+                conn.execute('''
+                    UPDATE blog_posts 
+                    SET generated_image = ?
+                    WHERE id = ?
+                ''', (image_path, post_id))
+                conn.commit()
+                return True
+        except sqlite3.Error as e:
+            logger.error(f"Error updating post image: {e}")
+            return False
     
     def get_post_by_id(self, post_id: int) -> Optional[Dict]:
         """Get a single post by ID"""

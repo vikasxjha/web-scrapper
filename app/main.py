@@ -6,21 +6,36 @@ Main application with routes and web interface
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from datetime import datetime
 import logging
+import os
 from typing import Optional
 
 from app.scraper import BlogScraper
 from app.database import BlogDatabase
+from config import config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this-in-production'
+def create_app(config_name='default'):
+    """Application factory pattern"""
+    app = Flask(__name__)
+    
+    # Load configuration
+    app_config = config.get(config_name, config['default'])
+    app.config.from_object(app_config)
+    
+    # Set secret key
+    app.secret_key = app_config.SECRET_KEY
+    
+    # Initialize components with configuration
+    scraper = BlogScraper()
+    db = BlogDatabase(app_config.DATABASE_PATH)
+    
+    return app, scraper, db
 
-# Initialize components
-scraper = BlogScraper()
-db = BlogDatabase()
+# Create app instance
+app, scraper, db = create_app(os.environ.get('FLASK_ENV', 'development'))
 
 @app.route('/')
 def index():
@@ -159,9 +174,83 @@ def stats():
     total_posts = db.get_total_posts_count()
     latest_scrape = db.get_latest_scrape_time()
     
-    return render_template('stats.html',
-                         total_posts=total_posts,
-                         latest_scrape=latest_scrape)
+    return render_template('stats.html', stats=stats)
+
+@app.route('/api/generate-image/<int:post_id>', methods=['POST'])
+def generate_image_for_post(post_id):
+    """Generate image for a specific post on demand"""
+    try:
+        # Get the post from database
+        post = db.get_post_by_id(post_id)
+        if not post:
+            return jsonify({'success': False, 'error': 'Post not found'}), 404
+        
+        # Generate image
+        from app.image_generator import image_generator
+        image_path = image_generator.generate_image(
+            title=post['title'],
+            description=post.get('description', ''),
+            post_url=post['url']
+        )
+        
+        # Update database with new image path
+        success = db.update_post_image(post_id, image_path)
+        
+        if success:
+            logger.info(f"Generated image for post {post_id}: {image_path}")
+            return jsonify({
+                'success': True, 
+                'image_path': image_path,
+                'message': 'Image generated successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to update database'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error generating image for post {post_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/regenerate-image/<int:post_id>', methods=['POST'])
+def regenerate_image_for_post(post_id):
+    """Regenerate image for a specific post (bypass cache)"""
+    try:
+        # Get the post from database
+        post = db.get_post_by_id(post_id)
+        if not post:
+            return jsonify({'success': False, 'error': 'Post not found'}), 404
+        
+        # Clear cache for this post to force regeneration
+        from app.image_generator import image_generator
+        cache_key = image_generator._generate_cache_key(post['title'], post.get('description', ''))
+        if cache_key in image_generator.cache:
+            del image_generator.cache[cache_key]
+            image_generator._save_cache()
+        
+        # Generate new image
+        image_path = image_generator.generate_image(
+            title=post['title'],
+            description=post.get('description', ''),
+            post_url=post['url']
+        )
+        
+        # Update database with new image path
+        success = db.update_post_image(post_id, image_path)
+        
+        if success:
+            logger.info(f"Regenerated image for post {post_id}: {image_path}")
+            return jsonify({
+                'success': True, 
+                'image_path': image_path,
+                'message': 'Image regenerated successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to update database'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error regenerating image for post {post_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.errorhandler(404)
 
 @app.errorhandler(404)
 def not_found(error):
