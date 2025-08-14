@@ -11,6 +11,7 @@ from typing import List, Dict, Optional
 from cachetools import TTLCache
 import time
 import logging
+from .image_generator import image_generator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -104,6 +105,17 @@ class BlogScraper:
             # Extract thumbnail
             thumbnail = self.extract_thumbnail(container)
             
+            # Generate AI image for the post (only if enabled in config)
+            generated_image = None
+            try:
+                from config import config
+                app_config = config.get('development')()
+                if app_config.IMAGE_GENERATION_ON_SCRAPE:
+                    generated_image = self.generate_post_image(title, description, url)
+            except Exception:
+                # If config is not available, don't generate during scrape
+                pass
+            
             return {
                 'title': title,
                 'url': url,
@@ -111,6 +123,7 @@ class BlogScraper:
                 'full_content': full_content,
                 'published_date': pub_date,
                 'thumbnail': thumbnail,
+                'generated_image': generated_image,
                 'scraped_at': datetime.now().isoformat()
             }
             
@@ -267,6 +280,15 @@ class BlogScraper:
                 return match.group()
         
         return date_str[:20]  # Truncate if no pattern matches
+    
+    def generate_post_image(self, title: str, description: str, url: str) -> str:
+        """Generate an AI image for the blog post"""
+        try:
+            logger.info(f"Generating image for post: {title}")
+            return image_generator.generate_image(title, description, url)
+        except Exception as e:
+            logger.error(f"Error generating image for '{title}': {e}")
+            return image_generator._get_placeholder_filename()
     
     def scrape_all_posts(self) -> List[Dict]:
         """Main method to scrape all blog posts"""

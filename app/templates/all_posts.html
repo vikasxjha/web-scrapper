@@ -16,23 +16,42 @@ content %}
     {% for post in posts %}
     <div
       class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+      data-post-id="{{ post.id }}"
     >
       <div class="md:flex">
-        <!-- Post Thumbnail -->
-        {% if post.thumbnail %}
-        <div class="md:w-1/3 h-48 md:h-auto bg-gray-200 overflow-hidden">
+        <!-- Post Image (Generated AI Image or Thumbnail) -->
+        {% if post.generated_image %}
+        <div class="md:w-1/3 h-48 md:h-auto image-container bg-gray-200">
+          <img
+            src="{{ url_for('static', filename=post.generated_image) }}"
+            alt="AI Generated image for: {{ post.title }}"
+            class="post-image w-full h-full object-cover cursor-pointer"
+            onclick="openImageModal(this.src)"
+          />
+        </div>
+        {% elif post.thumbnail %}
+        <div class="md:w-1/3 h-48 md:h-auto image-container bg-gray-200">
           <img
             src="{{ post.thumbnail }}"
             alt="{{ post.title }}"
-            class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            class="post-image w-full h-full object-cover"
             onerror="this.parentElement.style.display='none'"
           />
+        </div>
+        {% else %}
+        <div
+          class="md:w-1/3 h-48 md:h-auto bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center"
+        >
+          <div class="text-white text-center">
+            <i class="fas fa-blog text-2xl mb-1"></i>
+            <p class="text-sm font-semibold">TestGuild</p>
+          </div>
         </div>
         {% endif %}
 
         <!-- Post Content -->
         <div
-          class="p-6 {% if post.thumbnail %}md:w-2/3{% else %}w-full{% endif %}"
+          class="p-6 {% if post.generated_image or post.thumbnail %}md:w-2/3{% else %}w-full{% endif %}"
         >
           <!-- Post Title -->
           <h2 class="text-2xl font-bold text-gray-900 mb-3">
@@ -63,6 +82,46 @@ content %}
             </span>
           </div>
 
+          <!-- Image Generation Controls -->
+          <div
+            class="flex items-center justify-between bg-gray-50 rounded-lg p-3 mb-4"
+          >
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-image text-primary text-sm"></i>
+              <span class="text-xs font-medium text-gray-700">AI Image:</span>
+              {% if post.generated_image %}
+              <span
+                class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
+              >
+                <i class="fas fa-check mr-1"></i>Generated
+              </span>
+              {% else %}
+              <span
+                class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full"
+              >
+                <i class="fas fa-clock mr-1"></i>Not Generated
+              </span>
+              {% endif %}
+            </div>
+            <div class="flex space-x-1">
+              {% if post.generated_image %}
+              <button
+                onclick="regenerateImageInList({{ post.id }}, this)"
+                class="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded transition-colors"
+              >
+                <i class="fas fa-sync-alt mr-1"></i>Regenerate
+              </button>
+              {% else %}
+              <button
+                onclick="generateImageInList({{ post.id }}, this)"
+                class="px-2 py-1 bg-primary hover:bg-secondary text-white text-xs font-medium rounded transition-colors"
+              >
+                <i class="fas fa-magic mr-1"></i>Generate
+              </button>
+              {% endif %}
+            </div>
+          </div>
+
           <!-- Post Content -->
           <div class="post-content">
             <!-- Summary View (default) -->
@@ -71,24 +130,28 @@ content %}
                 {{ post.description | truncate_words(30) }}
               </p>
             </div>
-            
+
             <!-- Full Content View (hidden by default) -->
             <div class="full-content-view hidden">
               {% if post.full_content %}
-                <div class="prose max-w-none text-gray-700 leading-relaxed mb-4 whitespace-pre-line">
-                  {{ post.full_content[:1000] }}{% if post.full_content|length > 1000 %}...{% endif %}
-                </div>
+              <div
+                class="prose max-w-none text-gray-700 leading-relaxed mb-4 whitespace-pre-line"
+              >
+                {{ post.full_content[:1000] }}{% if post.full_content|length >
+                1000 %}...{% endif %}
+              </div>
               {% else %}
-                <p class="text-gray-700 mb-4 leading-relaxed">
-                  {{ post.description }}
-                </p>
+              <p class="text-gray-700 mb-4 leading-relaxed">
+                {{ post.description }}
+              </p>
               {% endif %}
             </div>
-            
+
             <!-- Toggle Button -->
-            <button 
+            <button
               onclick="toggleContent(this)"
-              class="text-primary hover:text-secondary text-sm font-medium mb-4 focus:outline-none">
+              class="text-primary hover:text-secondary text-sm font-medium mb-4 focus:outline-none"
+            >
               <i class="fas fa-expand-arrows-alt mr-1"></i>
               <span class="toggle-text">Show Full Content</span>
             </button>
@@ -222,26 +285,239 @@ content %}
 </div>
 
 <script>
-function toggleContent(button) {
-  const postContent = button.closest('.post-content');
-  const summaryView = postContent.querySelector('.summary-view');
-  const fullContentView = postContent.querySelector('.full-content-view');
-  const toggleText = button.querySelector('.toggle-text');
-  const icon = button.querySelector('i');
-  
-  if (summaryView.classList.contains('hidden')) {
-    // Show summary, hide full content
-    summaryView.classList.remove('hidden');
-    fullContentView.classList.add('hidden');
-    toggleText.textContent = 'Show Full Content';
-    icon.className = 'fas fa-expand-arrows-alt mr-1';
-  } else {
-    // Show full content, hide summary
-    summaryView.classList.add('hidden');
-    fullContentView.classList.remove('hidden');
-    toggleText.textContent = 'Show Summary';
-    icon.className = 'fas fa-compress-arrows-alt mr-1';
+  function toggleContent(button) {
+    const postContent = button.closest(".post-content");
+    const summaryView = postContent.querySelector(".summary-view");
+    const fullContentView = postContent.querySelector(".full-content-view");
+    const toggleText = button.querySelector(".toggle-text");
+    const icon = button.querySelector("i");
+
+    if (summaryView.classList.contains("hidden")) {
+      // Show summary, hide full content
+      summaryView.classList.remove("hidden");
+      fullContentView.classList.add("hidden");
+      toggleText.textContent = "Show Full Content";
+      icon.className = "fas fa-expand-arrows-alt mr-1";
+    } else {
+      // Show full content, hide summary
+      summaryView.classList.add("hidden");
+      fullContentView.classList.remove("hidden");
+      toggleText.textContent = "Show Summary";
+      icon.className = "fas fa-compress-arrows-alt mr-1";
+    }
   }
-}
+
+  // Image modal functions
+  function openImageModal(imageSrc) {
+    const modal = document.createElement("div");
+    modal.className =
+      "fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4";
+    modal.onclick = function () {
+      closeImageModal(modal);
+    };
+
+    const img = document.createElement("img");
+    img.src = imageSrc;
+    img.className = "max-w-full max-h-full object-contain";
+    img.onclick = function (e) {
+      e.stopPropagation();
+    };
+
+    const closeBtn = document.createElement("button");
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.className =
+      "absolute top-4 right-4 text-white text-2xl hover:text-gray-300";
+    closeBtn.onclick = function () {
+      closeImageModal(modal);
+    };
+
+    modal.appendChild(img);
+    modal.appendChild(closeBtn);
+    document.body.appendChild(modal);
+  }
+
+  function closeImageModal(modal) {
+    modal.remove();
+  }
+
+  // Image generation functions for list view
+  function generateImageInList(postId, button) {
+    const originalText = button.innerHTML;
+
+    // Show loading state
+    button.innerHTML =
+      '<i class="fas fa-spinner fa-spin mr-1"></i>Generating...';
+    button.disabled = true;
+
+    fetch(`/api/generate-image/${postId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Update the image in the list
+          updateImageInList(postId, data.image_path);
+          showNotification("Image generated successfully!", "success");
+        } else {
+          showNotification(
+            "Failed to generate image: " + (data.error || "Unknown error"),
+            "error"
+          );
+          button.innerHTML = originalText;
+          button.disabled = false;
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showNotification("Error generating image. Please try again.", "error");
+        button.innerHTML = originalText;
+        button.disabled = false;
+      });
+  }
+
+  function regenerateImageInList(postId, button) {
+    const originalText = button.innerHTML;
+
+    // Show loading state
+    button.innerHTML =
+      '<i class="fas fa-spinner fa-spin mr-1"></i>Regenerating...';
+    button.disabled = true;
+
+    fetch(`/api/regenerate-image/${postId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Update the image in the list
+          updateImageInList(postId, data.image_path);
+          showNotification("Image regenerated successfully!", "success");
+        } else {
+          showNotification(
+            "Failed to regenerate image: " + (data.error || "Unknown error"),
+            "error"
+          );
+          button.innerHTML = originalText;
+          button.disabled = false;
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showNotification(
+          "Error regenerating image. Please try again.",
+          "error"
+        );
+        button.innerHTML = originalText;
+        button.disabled = false;
+      });
+  }
+
+  function updateImageInList(postId, imagePath) {
+    // Find the post container
+    const postCards = document.querySelectorAll(
+      '[data-post-id="' + postId + '"]'
+    );
+    if (postCards.length === 0) {
+      // If no data attribute, reload the page
+      setTimeout(() => window.location.reload(), 1500);
+      return;
+    }
+
+    const postCard = postCards[0];
+
+    // Update the image
+    const imageContainer = postCard.querySelector(".image-container");
+    if (imageContainer) {
+      const img = imageContainer.querySelector("img");
+      if (img) {
+        img.src = `/static/${imagePath}`;
+        img.alt = "AI Generated image";
+      } else {
+        // Create new image element
+        const newImg = document.createElement("img");
+        newImg.src = `/static/${imagePath}`;
+        newImg.alt = "AI Generated image";
+        newImg.className =
+          "post-image w-full h-full object-cover cursor-pointer";
+        newImg.onclick = function () {
+          openImageModal(this.src);
+        };
+        imageContainer.innerHTML = "";
+        imageContainer.appendChild(newImg);
+      }
+    }
+
+    // Update the status badge and button
+    const controls = postCard.querySelector(".bg-gray-50");
+    if (controls) {
+      const badge = controls.querySelector(
+        ".text-xs.bg-yellow-100, .text-xs.bg-green-100"
+      );
+      const button = controls.querySelector("button");
+
+      if (badge) {
+        badge.className =
+          "text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full";
+        badge.innerHTML = '<i class="fas fa-check mr-1"></i>Generated';
+      }
+
+      if (button) {
+        button.className =
+          "px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded transition-colors";
+        button.innerHTML = '<i class="fas fa-sync-alt mr-1"></i>Regenerate';
+        button.onclick = function () {
+          regenerateImageInList(postId, this);
+        };
+      }
+    }
+  }
+
+  // Notification system
+  function showNotification(message, type = "info") {
+    const notification = document.createElement("div");
+    const bgColor =
+      type === "success"
+        ? "bg-green-500"
+        : type === "error"
+        ? "bg-red-500"
+        : "bg-blue-500";
+    const icon =
+      type === "success"
+        ? "fas fa-check"
+        : type === "error"
+        ? "fas fa-exclamation-triangle"
+        : "fas fa-info";
+
+    notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full`;
+    notification.innerHTML = `
+    <div class="flex items-center">
+      <i class="${icon} mr-2"></i>
+      <span>${message}</span>
+    </div>
+  `;
+
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => {
+      notification.classList.remove("translate-x-full");
+    }, 100);
+
+    // Animate out and remove
+    setTimeout(() => {
+      notification.classList.add("translate-x-full");
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 4000);
+  }
 </script>
 {% endblock %}
